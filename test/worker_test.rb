@@ -145,7 +145,7 @@ context "Resque::Worker" do
       task = @worker.job
       assert_equal({"args"=>[20, "/tmp"], "class"=>"SomeJob"}, task['payload'])
       assert task['run_at']
-      assert_equal 'jobs', task['queue']
+      assert_equal :jobs, task['queue']
     end
   end
 

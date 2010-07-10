@@ -18,6 +18,7 @@ require 'resque/stat'
 require 'resque/job'
 require 'resque/worker'
 require 'resque/plugin'
+require 'resque/queue_stats'
 
 module Resque
   include Helpers
@@ -34,7 +35,7 @@ module Resque
       @workers = @db.collection('workers')
       @failures = @db.collection('failures')
       @stats = @db.collection('stats')
-
+      @queues = @db.collection('queues')
       add_indexes
     else
       raise "I don't know what to do with #{server.inspect}"
@@ -66,6 +67,12 @@ module Resque
     return @stats if @stats
     self.mongo = 'localhost:27017'
     @stats
+  end
+  
+  def mongo_queues
+    return @queues if @queues
+    self.mongo = 'localhost:27017'
+    @queues
   end
   
   # The `before_first_fork` hook will be run in the **parent** process
@@ -120,9 +127,11 @@ module Resque
   end
 
   def add_indexes
+    @mongo.create_index([[:queue,1],[:date, 1]])
     @mongo.create_index :queue
     @workers.create_index :worker
     @stats.create_index :stat
+    @queues.create_index(:queue,:unique => 1)
   end
 
   def drop
@@ -130,7 +139,12 @@ module Resque
     @workers.drop
     @failures.drop
     @stats.drop
+    @queues.drop
     @mongo = nil
+    @workers = nil
+    @failures = nil
+    @stats = nil
+    @queues = nil
   end
   
   #
@@ -141,17 +155,22 @@ module Resque
   # item should be any JSON-able Ruby object.
   def push(queue, item)
     watch_queue(queue)
-    mongo << { :queue => queue.to_s, :item => encode(item) }
+    mongo << { :queue => queue.to_s, :item => item , :date => Time.now }
+    # mongo_queues.update({ :queue => queue.to_s }, { '$inc' => { :count => 1 }} )
+    QueueStats.add_job(queue)
   end
 
   # Pops a job off a queue. Queue name should be a string.
   #
   # Returns a Ruby object.
   def pop(queue)
-    doc = mongo.find_and_modify( :query => { :queue => queue },
-                                 :sort => [:natural, :desc],
+    doc = mongo.find_and_modify( :query => { :queue => queue.to_s },
+                                 :sort => [[:date, 1]],
                                  :remove => true )
-    decode doc['item']
+    #STDERR.puts doc.inspect
+    #mongo_queues.update ({:queue => queue.to_s}, { '$inc' => { :count => -1 }}) 
+    QueueStats.remove_job(queue)
+    doc['item']
   rescue Mongo::OperationFailure => e
     return nil if e.message =~ /No matching object/
     raise e
@@ -160,7 +179,8 @@ module Resque
   # Returns an int representing the size of a queue.
   # Queue name should be a string.
   def size(queue)
-    mongo.find(:queue => queue).count
+    queue_stats = QueueStats.new(queue)
+    queue_stats.size
   end
 
   # Returns an array of items currently queued. Queue name should be
@@ -173,9 +193,13 @@ module Resque
   #   Resque.peek('my_list', 59, 30)
   def peek(queue, start = 0, count = 1)
     start, count = [start, count].map { |n| Integer(n) }
-    res = mongo.find(:queue => queue).sort([:natural, :desc]).skip(start).limit(count).to_a
-    res.collect! { |doc| decode(doc['item']) }
-    
+    # res = mongo.find( :query => { :queue => queue }, 
+    #                   :fields => [:queue, :item],
+    #                   :sort => [[:date, -1]],
+    #                   :limit => count,
+    #                   :skip => start ).to_a
+    res = mongo.find(:queue => queue).sort([:date, 1]).skip(start).limit(count).to_a  
+    res.collect! { |doc| doc['item'] }
     if count == 1
       return nil if res.empty?
       res.first
@@ -187,12 +211,12 @@ module Resque
 
   # Returns an array of all known Resque queues as strings.
   def queues
-    mongo.distinct(:queue)
+    QueueStats.list
   end
   
   # Given a queue name, completely deletes the queue.
   def remove_queue(queue)
-    mongo.remove(:queue => queue)
+    QueueStats.remove(queue)
   end
 
   # Used internally to keep track of which queues we've created.

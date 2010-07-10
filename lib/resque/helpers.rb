@@ -13,6 +13,10 @@ module Resque
     def mongo_stats
       Resque.mongo_stats
     end
+    
+    def mongo_queues
+      Resque.mongo_queues
+    end
 
     # Given a Ruby object, returns a string suitable for storage in a
     # queue.
