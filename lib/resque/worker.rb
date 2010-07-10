@@ -346,14 +346,31 @@ module Resque
       Stat.clear("failed:#{self}")
     end
 
+    def check_payload(payload)
+      case payload.class.to_s
+      when 'Class'
+        payload.to_s
+      when 'Array'
+        payload.map { |e| check_payload(e) }
+      when 'Hash'
+        result = {}
+        payload.each { |k,v| result[k] = check_payload(v) }
+        result
+      else
+        return payload
+      end
+    end
+      
     # Given a job, tells Redis we're working on it. Useful for seeing
     # what workers are doing and when.
     def working_on(job)
       job.worker = self
-      data = encode \
+      data = {
         :queue   => job.queue,
         :run_at  => Time.now.to_s,
-      :payload => job.payload
+        :payload => check_payload(job.payload)
+      }
+    
       working_on = {'working_on' => data}
       mongo_workers.update({:worker => self.to_s},  {'$set' => working_on}, :upsert => true )
     end
@@ -405,7 +422,7 @@ module Resque
     def job
       worker = mongo_workers.find_one(:worker => self.to_s)
       return {} if !worker
-      decode(worker['working_on']) || {}
+      worker['working_on'] || {}
     end
     alias_method :processing, :job
 

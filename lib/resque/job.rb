@@ -79,20 +79,33 @@ module Resque
       klass = klass.to_s
 
       destroyed = 0
-
-      mongo.find(:queue => queue).each do |rec|
-        json   = decode(rec['item'])
-
-        match  = json['class'] == klass
-        match &= json['args'] == args unless args.empty?
-
-        if match
-          destroyed += 1
-          mongo.remove(:_id => rec['_id'])
-        end
+      
+      ### find the item using a mongo query, that's essentially why we removed decode / encode 
+      ### for the job payload. This should be much faster than loading every job and matching
+      ### them against our conditions !
+      
+      mongo_query = { :queue => queue.to_s, 'item.class' => klass }
+      unless args.empty?
+        mongo_query.merge!({ 'item.args' => args })
       end
-
-      destroyed
+      job_count = mongo.find(mongo_query).count
+      mongo.remove(mongo_query, :safe => true)
+      QueueStats.remove_job(queue,job_count)
+      job_count
+      
+      # mongo.find(mongo_query).each do |rec|
+      #   json   = decode(rec['item'])
+      # 
+      #   match  = json['class'] == klass
+      #   match &= json['args'] == args unless args.empty?
+      # 
+      #   if match
+      #     destroyed += 1
+      #     mongo.remove(:_id => rec['_id'])
+      #   end
+      # end
+      # 
+      # destroyed
     end
 
     # Given a string queue name, returns an instance of Resque::Job
