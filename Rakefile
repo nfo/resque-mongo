@@ -30,12 +30,12 @@ begin
   require 'resque/version'
 
   Jeweler::Tasks.new do |gemspec|
-    gemspec.name = "resque-mongo"
-    gemspec.summary = ""
+    gemspec.name = "ear-resque-mongo"
+    gemspec.summary = "Fork of http://github.com/ctrochalakis/resque-mongo using optimized mongo queries"
     gemspec.description = ""
-    gemspec.email = "yatiohi@ideopolis.gr"
-    gemspec.homepage = "http://github.com/ctrochalakis/resque-mongo"
-    gemspec.authors = ["Christos Trochalakis"]
+    gemspec.email = "erwan@silentale.com"
+    gemspec.homepage = "http://github.com/earzur/resque-mongo"
+    gemspec.authors = ["Erwan Arzur"]
     gemspec.version = Resque::Version
 
     gemspec.add_dependency "mongo", ">=0.20"
