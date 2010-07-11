@@ -32,14 +32,15 @@ module Resque
     def self.working
       select = {}
       select['working_on'] = {"$exists" => true}
-      working = mongo_workers.find(select).to_a
+      working = mongo_workers.find(select, :fields => ['worker']).to_a
       working.map! {|w| w['worker'] }
-      working.map {|w| find(w) }
+      working.map { |w| queues = w.split(','); worker = new(*queues) ; worker.to_s = w }
+      #working.map {|w| find(w) } ### don't make another mongo request ! the data may have changed between the 2 find() !! ## EAR
     end
 
     # Returns a single worker object. Accepts a string id.
     def self.find(worker_id)
-      worker = mongo_workers.find_one(:worker => worker_id)
+      worker = mongo_workers.find_one(:worker => worker_id, :fields => ['worker'])
       return nil unless worker
       queues = worker['worker'].split(',')
       worker = new(*queues)
