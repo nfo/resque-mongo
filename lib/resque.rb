@@ -216,6 +216,7 @@ module Resque
   
   # Given a queue name, completely deletes the queue.
   def remove_queue(queue)
+    mongo.remove({:queue => queue.to_s})
     QueueStats.remove(queue)
   end
 

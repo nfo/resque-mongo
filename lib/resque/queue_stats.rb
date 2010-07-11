@@ -34,7 +34,6 @@ module Resque
     end
 
     def self.remove(queue)
-      mongo.remove({:queue => queue.to_s})
       mongo_queues.remove({:queue => queue.to_s})
     end
   
