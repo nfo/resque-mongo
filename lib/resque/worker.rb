@@ -24,23 +24,23 @@ module Resque
 
     # Returns an array of all worker objects.
     def self.all
-      mongo_workers.distinct(:worker).map { |worker| find(worker) }
+      mongo_workers.distinct(:worker).map { |w| queues = w.split(','); worker = new(*queues); worker.to_s = w; worker }
     end
 
     # Returns an array of all worker objects currently processing
     # jobs.
     def self.working
-      select = {}
-      select['working_on'] = {"$exists" => true}
-      working = mongo_workers.find(select, :fields => ['worker']).to_a
+      select = {'working_on' => { '$exists' => true }}
+      # select['working_on'] = {"$exists" => true}
+      working = mongo_workers.find(select).to_a
       working.map! {|w| w['worker'] }
-      working.map { |w| queues = w.split(','); worker = new(*queues) ; worker.to_s = w }
+      working.map { |w| queues = w.split(','); worker = new(*queues) ; worker.to_s = w ; worker }
       #working.map {|w| find(w) } ### don't make another mongo request ! the data may have changed between the 2 find() !! ## EAR
     end
 
     # Returns a single worker object. Accepts a string id.
     def self.find(worker_id)
-      worker = mongo_workers.find_one(:worker => worker_id, :fields => ['worker'])
+      worker = mongo_workers.find_one(:worker => worker_id)
       return nil unless worker
       queues = worker['worker'].split(',')
       worker = new(*queues)
@@ -415,7 +415,7 @@ module Resque
 
     # Tell Redis we've started
     def started!
-      started = {'started' => Time.now.to_s}
+      started = {'started' => Time.now }
       mongo_workers.update({:worker => self.to_s},  {'$set' => started})
     end
 
