@@ -40,15 +40,15 @@ context "on GET to /stats/resque" do
   should_respond_with_success
 end
 
-context "on GET to /stats/redis" do
-  setup { get "/stats/redis" }
-
-  should_respond_with_success
-end
-
-context "on GET to /stats/resque" do
-  setup { get "/stats/keys" }
-
-  should_respond_with_success
-end
+# context "on GET to /stats/redis" do
+#   setup { get "/stats/redis" }
+# 
+#   should_respond_with_success
+# end
+# 
+# context "on GET to /stats/resque" do
+#   setup { get "/stats/keys" }
+# 
+#   should_respond_with_success
+# end
 
