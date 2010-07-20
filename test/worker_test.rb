@@ -143,6 +143,7 @@ context "Resque::Worker" do
   test "records what it is working on" do
     @worker.work(0) do
       task = @worker.job
+      assert task
       assert_equal({"args"=>[20, "/tmp"], "class"=>"SomeJob"}, task['payload'])
       assert task['run_at']
       assert_equal :jobs, task['queue']
@@ -202,7 +203,7 @@ context "Resque::Worker" do
   test "knows when it started" do
     time = Time.now
     @worker.work(0) do
-      assert_equal time.to_s, @worker.started.to_s
+      assert_equal time.to_i/1000, @worker.started.to_i/1000
     end
   end
 
