@@ -343,7 +343,6 @@ module Resque
       # If we're still processing a job, make sure it gets logged as a
       # failure.
       if (hash = processing) && !hash.empty?
-        STDERR.puts "Unregister_worker with non-empty hash: #{hash.inspect}"
         j = Job.new(hash[:queue], hash[:payload])
         # Ensure the proper worker is attached to this job, even if
         # it's not the precise instance that died.
@@ -431,12 +430,6 @@ module Resque
     end
 
     # Returns a hash explaining the Job we're currently processing, if any.
-    # def job
-    #   worker = mongo_workers.find_one(:worker => self.to_s)
-    #   return {} if !worker
-    #   worker['working_on'] || {}
-    # end
-    #alias_method :processing, :job
     def processing
       job || {} 
     end

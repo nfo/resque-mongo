@@ -1,10 +1,11 @@
-<%if  start - 20 >= 0 || start + 20 <= size%>
+<%count = count || 50 %>
+<%if  start - count >= 0 || start + count <= size%>
 <p class='pagination'>
-  <% if start - 20 >= 0 %>
-    <a href="<%= current_page %>?start=<%= start - 20 %>" class='less'>&laquo; less</a>
+  <% if start - count >= 0 %>
+    <a href="<%= current_page %>?start=<%= start - count %>" class='less'>&laquo; less</a>
   <% end %>
-  <% if start + 20 <= size %>
-    <a href="<%= current_page %>?start=<%= start + 20 %>" class='more'>more &raquo;</a>
+  <% if start + count <= size %>
+    <a href="<%= current_page %>?start=<%= start + count %>" class='more'>more &raquo;</a>
   <% end %>
 </p>
 <%end%>

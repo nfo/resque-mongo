@@ -1,5 +1,6 @@
 <%start = params[:start].to_i %>
-<%failed = [Resque::Failure.all(start, 20)].flatten %>
+<%count = params[:count] ? params[:count].to_i : 50 %>
+<%failed = [Resque::Failure.all(start, count)].flatten %>
 <% index = 0 %>
 
 <h1>Failed Jobs</h1>
@@ -9,7 +10,7 @@
 </form>
 <%end%>
 
-<p class='sub'>Showing <%=start%> to <%= start + 20 %> of <b><%= size = Resque::Failure.count %></b> jobs</p>
+<p class='sub'>Showing <%=start%> to <%= start + count %> of <b><%= size = Resque::Failure.count %></b> jobs</p>
 
 <ul class='failed'>
   <%for job in failed%>
@@ -45,5 +46,5 @@
   <%end%>
 </ul>
 
-<%= partial :next_more, :start => start, :size => size %>
+<%= partial :next_more, :start => start, :count => count, :size => size %>
 
