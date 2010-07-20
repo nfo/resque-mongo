@@ -29,9 +29,12 @@ module Resque
     # This job's associated payload object.
     attr_reader :payload
 
-    def initialize(queue, payload)
+    attr_reader :start
+    
+    def initialize(queue, payload, start = Time.now)
       @queue = queue
       @payload = payload
+      @start = start
     end
 
     # Creates a job by placing it on a queue. Expects a string queue
@@ -51,6 +54,10 @@ module Resque
       Resque.push(queue, :class => klass.to_s, :args => args)
     end
 
+    def self.from_hash(hash)
+      new(hash['queue'],hash['payload'],Time.parse(hash['run_at']))
+    end
+        
     # Removes a job from a queue. Expects a string queue name, a
     # string class name, and, optionally, args.
     #
@@ -217,5 +224,6 @@ module Resque
         payload_class == other.payload_class &&
         args == other.args
     end
+    
   end
 end

@@ -22,6 +22,8 @@ module Resque
 
     attr_writer :to_s
 
+    attr_accessor :job
+    
     # Returns an array of all worker objects.
     def self.all
       mongo_workers.distinct(:worker).map { |w| queues = w.split(','); worker = new(*queues); worker.to_s = w; worker }
@@ -33,17 +35,23 @@ module Resque
       select = {'working_on' => { '$exists' => true }}
       # select['working_on'] = {"$exists" => true}
       working = mongo_workers.find(select).to_a
-      working.map! {|w| w['worker'] }
-      working.map { |w| queues = w.split(','); worker = new(*queues) ; worker.to_s = w ; worker }
-      #working.map {|w| find(w) } ### don't make another mongo request ! the data may have changed between the 2 find() !! ## EAR
+      # working.map! {|w| w['worker'] }
+      working.map do |w|
+        queues = w['worker'].split(',')
+        worker = new(*queues)
+        worker.to_s = w['worker']
+        worker.job = w['working_on'] || {}
+        worker 
+      end
     end
 
     # Returns a single worker object. Accepts a string id.
     def self.find(worker_id)
-      worker = mongo_workers.find_one(:worker => worker_id)
-      return nil unless worker
-      queues = worker['worker'].split(',')
+      w = mongo_workers.find_one(:worker => worker_id)
+      return nil unless w
+      queues = w['worker'].split(',')
       worker = new(*queues)
+      worker.job = w['working_on'] || {} ## avoid a new call to mongo just to retrieve what's this worker is doing
       worker.to_s = worker_id
       worker
     end
@@ -103,23 +111,25 @@ module Resque
     # has completed processing. Useful for testing.
     def work(interval = 5, &block)
       $0 = "resque: Starting"
+      job_count = 0
       startup
-
       loop do
+        log "start work() loop."
         break if @shutdown
 
-        if not @paused and job = reserve
-          log "got: #{job.inspect}"
+        if not @paused and j = reserve
+          log "got: #{j.inspect}"
           run_hook :before_fork
-          working_on job
+          working_on j
 
           if @child = fork
             rand # Reseeding
-            procline "Forked #{@child} at #{Time.now.to_i}"
+            procline "Forked #{@child} at #{Time.now.to_s}"
             Process.wait
           else
-            procline "Processing #{job.queue} since #{Time.now.to_i}"
-            perform(job, &block)
+            procline "Processing #{j.queue} since #{Time.now.to_s} (#{job_count} so far)"
+            perform(j, &block)
+            job_count += 1
             exit! unless @cant_fork
           end
 
@@ -139,28 +149,27 @@ module Resque
 
     # DEPRECATED. Processes a single job. If none is given, it will
     # try to produce one. Usually run in the child.
-    def process(job = nil, &block)
-      return unless job ||= reserve
-
-      working_on job
-      perform(job, &block)
+    def process(j = nil, &block)
+      return unless j ||= reserve
+      working_on j
+      perform(j, &block)
     ensure
       done_working
     end
 
     # Processes a given job in the child.
-    def perform(job)
+    def perform(j)
       begin
-        run_hook :after_fork, job
-        job.perform
+        run_hook :after_fork, j
+        j.perform
       rescue Object => e
-        log "#{job.inspect} failed: #{e.inspect}"
-        job.fail(e)
+        log "#{j.inspect} failed: #{e.inspect}"
+        j.fail(e)
         failed!
       else
-        log "done: #{job.inspect}"
+        log "done: #{j.inspect}"
       ensure
-        yield job if block_given?
+        yield j if block_given?
       end
     end
 
@@ -169,9 +178,9 @@ module Resque
     def reserve
       queues.each do |queue|
         log! "Checking #{queue}"
-        if job = Resque::Job.reserve(queue)
+        if j = Resque::Job.reserve(queue)
           log! "Found job on #{queue}"
-          return job
+          return j
         end
       end
 
@@ -334,11 +343,12 @@ module Resque
       # If we're still processing a job, make sure it gets logged as a
       # failure.
       if (hash = processing) && !hash.empty?
-        job = Job.new(hash['queue'], hash['payload'])
+        STDERR.puts "Unregister_worker with non-empty hash: #{hash.inspect}"
+        j = Job.new(hash[:queue], hash[:payload])
         # Ensure the proper worker is attached to this job, even if
         # it's not the precise instance that died.
-        job.worker = self
-        job.fail(DirtyExit.new)
+        j.worker = self
+        j.fail(DirtyExit.new)
       end
 
       mongo_workers.remove(:worker => self.to_s)
@@ -364,14 +374,14 @@ module Resque
       
     # Given a job, tells Redis we're working on it. Useful for seeing
     # what workers are doing and when.
-    def working_on(job)
-      job.worker = self
+    def working_on(j)
+      j.worker = self
       data = {
-        :queue   => job.queue,
-        :run_at  => Time.now.to_s,
-        :payload => check_payload(job.payload)
+        'queue'   => j.queue,
+        'run_at'  => Time.now.to_s,
+        'payload' => check_payload(j.payload)
       }
-    
+      @job = data
       working_on = {'working_on' => data}
       mongo_workers.update({:worker => self.to_s},  {'$set' => working_on}, :upsert => true )
     end
@@ -379,9 +389,10 @@ module Resque
     # Called when we are done working - clears our `working_on` state
     # and tells Redis we processed a job.
     def done_working
-      processed!
+      @job = {}
       working_on = {'working_on' => 1}
-      mongo_workers.update({:worker =>  self.to_s}, {'$unset' => working_on})
+      mongo_workers.update({:worker =>  self.to_s}, {'$unset' => working_on})      
+      processed!
     end
 
     # How many jobs has this worker processed? Returns an int.
@@ -420,13 +431,16 @@ module Resque
     end
 
     # Returns a hash explaining the Job we're currently processing, if any.
-    def job
-      worker = mongo_workers.find_one(:worker => self.to_s)
-      return {} if !worker
-      worker['working_on'] || {}
+    # def job
+    #   worker = mongo_workers.find_one(:worker => self.to_s)
+    #   return {} if !worker
+    #   worker['working_on'] || {}
+    # end
+    #alias_method :processing, :job
+    def processing
+      job || {} 
     end
-    alias_method :processing, :job
-
+    
     # Boolean - true if working, false if not
     def working?
       state == :working
