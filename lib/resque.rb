@@ -43,35 +43,35 @@ module Resque
   end
 
 
-  # Returns the current Redis connection. If none has been created, will
+  # Returns the current Mongo connection. If none has been created, will
   # create a new one.
   def mongo
     return @mongo if @mongo
-    self.mongo = 'localhost:27017'
+    self.mongo = ENV['MONGO']||'localhost:27017'
     self.mongo
   end
 
   def mongo_workers
     return @workers if @workers
-    self.mongo = 'localhost:27017'
+    self.mongo = ENV['MONGO']||'localhost:27017'
     @workers
   end
 
   def mongo_failures
     return @failures if @failures
-    self.mongo = 'localhost:27017'
+    self.mongo = ENV['MONGO']||'localhost:27017'
     @failures
   end
 
   def mongo_stats
     return @stats if @stats
-    self.mongo = 'localhost:27017'
+    self.mongo = ENV['MONGO']||'localhost:27017'
     @stats
   end
   
   def mongo_queues
     return @queues if @queues
-    self.mongo = 'localhost:27017'
+    self.mongo = ENV['MONGO']||'localhost:27017'
     @queues
   end
   
