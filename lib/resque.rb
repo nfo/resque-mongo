@@ -24,11 +24,18 @@ module Resque
   include Helpers
   extend self
 
+  attr_accessor :verbose
+  attr_accessor :very_verbose
+  
   # Accepts a 'hostname:port' string or a Redis server.
   def mongo=(server)
+    @verbose = ENV['LOGGING']||ENV['VERBOSE']
+    @very_verbose = ENV['VVERBOSE']
+    
     case server
     when String
       host, port = server.split(':')
+      log "Initializing connection to #{host}:#{port}"
       @con = Mongo::Connection.new(host, port)
       @db = @con.db('monque')
       @mongo = @db.collection('monque')
@@ -36,6 +43,7 @@ module Resque
       @failures = @db.collection('failures')
       @stats = @db.collection('stats')
       @queues = @db.collection('queues')
+      log "Creating/updating indexes"
       add_indexes
     else
       raise "I don't know what to do with #{server.inspect}"
@@ -132,6 +140,7 @@ module Resque
     @workers.create_index :worker
     @stats.create_index :stat
     @queues.create_index(:queue,:unique => 1)
+    @failures.create_index :queue
   end
 
   def drop
@@ -156,7 +165,6 @@ module Resque
   def push(queue, item)
     watch_queue(queue)
     mongo << { :queue => queue.to_s, :item => item , :date => Time.now }
-    # mongo_queues.update({ :queue => queue.to_s }, { '$inc' => { :count => 1 }} )
     QueueStats.add_job(queue)
   end
 
@@ -167,8 +175,6 @@ module Resque
     doc = mongo.find_and_modify( :query => { :queue => queue.to_s },
                                  :sort => [[:date, 1]],
                                  :remove => true )
-    #STDERR.puts doc.inspect
-    #mongo_queues.update ({:queue => queue.to_s}, { '$inc' => { :count => -1 }}) 
     QueueStats.remove_job(queue)
     doc['item']
   rescue Mongo::OperationFailure => e
@@ -193,11 +199,6 @@ module Resque
   #   Resque.peek('my_list', 59, 30)
   def peek(queue, start = 0, count = 1)
     start, count = [start, count].map { |n| Integer(n) }
-    # res = mongo.find( :query => { :queue => queue }, 
-    #                   :fields => [:queue, :item],
-    #                   :sort => [[:date, -1]],
-    #                   :limit => count,
-    #                   :skip => start ).to_a
     res = mongo.find(:queue => queue).sort([:date, 1]).skip(start).limit(count).to_a  
     res.collect! { |doc| doc['item'] }
     if count == 1
@@ -211,11 +212,13 @@ module Resque
 
   # Returns an array of all known Resque queues as strings.
   def queues
+    log "listing queues"
     QueueStats.list
   end
   
   # Given a queue name, completely deletes the queue.
   def remove_queue(queue)
+    log "removing #{queue}"
     mongo.remove({:queue => queue.to_s})
     QueueStats.remove(queue)
   end
@@ -339,4 +342,16 @@ module Resque
   def keys
     queues
   end
+  
+  
+  # Log a message to STDOUT if we are verbose or very_verbose.
+  def log(message)
+    if verbose
+      puts "*** #{message}"
+    elsif very_verbose
+      time = Time.now.strftime('%I:%M:%S %Y-%m-%d')
+      puts "** [#{time}] #$$: #{message}"
+    end
+  end
+
 end
