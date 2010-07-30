@@ -161,8 +161,9 @@ module Resque
             else
               lambda do
                 job.send(hook, *job_args) do
-                  job.perform(*job_args)
+                  result = job.perform(*job_args)
                   job_was_performed = true
+                  result
                 end
               end
             end

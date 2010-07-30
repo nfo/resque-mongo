@@ -27,7 +27,7 @@ module Resque
   attr_accessor :verbose
   attr_accessor :very_verbose
   
-  # Accepts a 'hostname:port' string or a Redis server.
+  # Accepts a 'hostname:port' string or a Mongo::Connection object.
   def mongo=(server)
     @verbose = ENV['LOGGING']||ENV['VERBOSE']
     @very_verbose = ENV['VVERBOSE']
@@ -37,17 +37,19 @@ module Resque
       host, port = server.split(':')
       log "Initializing connection to #{host}:#{port}"
       @con = Mongo::Connection.new(host, port)
-      @db = @con.db('monque')
-      @mongo = @db.collection('monque')
-      @workers = @db.collection('workers')
-      @failures = @db.collection('failures')
-      @stats = @db.collection('stats')
-      @queues = @db.collection('queues')
-      log "Creating/updating indexes"
-      add_indexes
+    when Mongo::Connection
+      @con = server
     else
       raise "I don't know what to do with #{server.inspect}"
     end
+    @db = @con.db('monque')
+    @mongo = @db.collection('monque')
+    @workers = @db.collection('workers')
+    @failures = @db.collection('failures')
+    @stats = @db.collection('stats')
+    @queues = @db.collection('queues')
+    log "Creating/updating indexes"
+    add_indexes
   end
 
 
@@ -116,8 +118,8 @@ module Resque
   end
 
   # The `after_fork` hook will be run in the child process and is passed
-  # the current job. Any changes you make, therefor, will only live as
-  # long as the job currently being processes.
+  # the current job. Any changes you make, therefore, will only live as
+  # long as the job currently being processed.
   #
   # Call with a block to set the hook.
   # Call with no arguments to return the hook.
@@ -131,7 +133,7 @@ module Resque
   end
 
   def to_s
-    "Mongo Client connected to #{@con.host}"
+    "Resque Client connected to #{@con.host}:#{@con.port}"
   end
 
   def add_indexes
@@ -182,7 +184,7 @@ module Resque
     raise e
   end
 
-  # Returns an int representing the size of a queue.
+  # Returns an integer representing the size of a queue.
   # Queue name should be a string.
   def size(queue)
     queue_stats = QueueStats.new(queue)
@@ -212,7 +214,6 @@ module Resque
 
   # Returns an array of all known Resque queues as strings.
   def queues
-    log "listing queues"
     QueueStats.list
   end
   
@@ -333,7 +334,8 @@ module Resque
       :workers   => workers.size.to_i,
       :working   => working.size,
       :failed    => Stat[:failed],
-      :servers   => ["#{@con.host}:#{@con.port}"]
+      :servers   => ["#{@con.host}:#{@con.port}"],
+      :environment  => ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development',
     }
   end
 
