@@ -32,6 +32,10 @@ module Resque
     @verbose = ENV['LOGGING']||ENV['VERBOSE']
     @very_verbose = ENV['VVERBOSE']
     
+    raise "I don't know what to do with #{server.inspect}" unless server.is_a?(String) || server.is_a?(Mongo::Connection)
+    
+    @con.close if @con
+    
     case server
     when String
       host, port = server.split(':')
@@ -40,7 +44,7 @@ module Resque
     when Mongo::Connection
       @con = server
     else
-      raise "I don't know what to do with #{server.inspect}"
+      
     end
     @db = @con.db('monque')
     @mongo = @db.collection('monque')
