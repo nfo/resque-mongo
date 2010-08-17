@@ -191,7 +191,7 @@ module Resque
     # A splat ("*") means you want every queue (in alpha order) - this
     # can be useful for dynamically adding new queues.
     def queues
-      @queues[0] == "*" ? Resque.queues.sort : @queues
+      @queues[0] == "*" ? Resque.queues.sort : Resque.queues(@queues).sort
     end
 
     # Not every platform supports fork. Here we do our magic to

@@ -216,9 +216,10 @@ module Resque
     end
   end
 
-  # Returns an array of all known Resque queues as strings.
-  def queues
-    QueueStats.list
+  # Returns an array of all known Resque queues as strings,
+  # filtered by the given names or prefixes.
+  def queues(names = nil)
+    QueueStats.list(names)
   end
   
   # Given a queue name, completely deletes the queue.

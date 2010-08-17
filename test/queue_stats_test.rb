@@ -10,6 +10,23 @@ context "Queue Statistics" do
     list = Resque::QueueStats.list
     assert list.include?('test')
   end
+  
+  test "Creating queues and check it can be filtered in the queues list" do
+    queue_stats = Resque::QueueStats.new(:abc)
+    queue_stats = Resque::QueueStats.new(:abd)
+    queue_stats = Resque::QueueStats.new(:xyz)
+    
+    list = Resque::QueueStats.list('ab*')
+    assert list.include?('abc')
+    assert list.include?('abd')
+    assert !list.include?('xyz')
+    
+    list = Resque::QueueStats.list(['x*', 'abc'])
+    assert list.include?('abc')
+    assert !list.include?('abd')
+    assert list.include?('xyz')
+  end
+  
   test "We can add an remove queues" do
     test_1 = Resque::QueueStats.new(:test1)
     list = Resque::QueueStats.list

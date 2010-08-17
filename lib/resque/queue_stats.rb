@@ -28,23 +28,29 @@ module Resque
       @size
     end 
 
-    def self.list
-      list = mongo_queues.distinct(:queue).to_a
-      list
+    def self.list(names = nil)
+      if names
+        criteria = [*names].collect do |name|
+          name =~ /\*$/ ? Regexp.new("^#{name[0..-2]}") : name
+        end
+        mongo_queues.distinct(:queue, :queue => {'$in' => criteria}).to_a
+      else
+        mongo_queues.distinct(:queue).to_a
+      end
     end
 
     def self.remove(queue)
       mongo_queues.remove({:queue => queue.to_s})
     end
-  
+
     def self.add_job(queue,count=1)
       QueueStats.new(queue).add_job(count)
     end
-  
+
     def self.remove_job(queue, count = 1)
       self.add_job(queue,-count)
     end
-     
+
     def self.size(queue)
       QueueStats.new(queue).size
     end
