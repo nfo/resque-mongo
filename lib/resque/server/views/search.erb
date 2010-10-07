@@ -1,20 +1,21 @@
 <%start = params[:start].to_i %>
 <%count = params[:count] ? params[:count].to_i : 50 %>
-<%failed = [Resque::Failure.all(start, count)].flatten %>
+<%failed = [Resque::Failure.search_results(start, count, params[:squery])].flatten %>
 <% index = 0 %>
 
-<h1>Failed Jobs</h1>
+<h1>Search Results for "<%= params[:squery]%>"</h1>
+
 <%unless failed.empty?%>
 <form method="POST" action="<%=u 'failed/clear'%>" class='clear-failed'>
   <input type='submit' name='' value='Clear Failed Jobs' />
 </form>
+<%end%>
 <form method="POST" action="<%=u 'search'%>">
   <input type='text' name='squery'>
   <input type='submit' name='' value='Search' />
 </form>
-<%end%>
 
-<p class='sub'>Showing <%=start%> to <%= start + count %> of <b><%= size = Resque::Failure.count %></b> jobs</p>
+<p class='sub'>Showing <%=start%> to <%= start + count %> of <b><%= size = failed.size %></b> search results</p>
 
 <ul class='failed'>
   <%for job in failed%>
@@ -55,4 +56,3 @@
 </ul>
 
 <%= partial :next_more, :start => start, :count => count, :size => size %>
-

@@ -25,6 +25,35 @@ module Resque
         all_failures = Resque.mongo_failures.find().sort([:natural, :desc]).skip(start).limit(count).to_a
         all_failures.size == 1 ? all_failures.first : all_failures
       end
+      
+      # Looks for failed jobs who match a particular search string
+      def self.search_results(start = 0, count = 1, squery)
+        start, count = [start, count].map { |n| Integer(n) }
+        search_res = [];
+        
+        if squery.nil? || squery.empty?
+          return search_res
+        end
+        
+        Resque.mongo_failures.find({}, {:fields => {"backtrace" => 0, "failed_at" => 0}}).sort([:natural, :desc]).skip(start).limit(count).to_a.each do |failure|
+            failure.each_key do |key|
+              match = false
+              squery.split.each do |term|
+                p term
+                if failure[key].to_s =~ /#{term}/i
+                  match = true
+                  break
+                end
+              end
+              if match
+                search_res << failure
+                break
+              end
+            end
+        end
+        
+        search_res.size == 1 ? search_res.first : search_res
+      end
 
       def self.clear
         Resque.mongo_failures.remove

@@ -48,6 +48,13 @@ module Resque
     def self.all(start = 0, count = 1)
       backend.all(start, count)
     end
+    
+    # Will hold the last count - start results of 
+    # a search through all the failed jobs,
+    # using the query string 'squery'
+    def self.search_results(start = 0, count = 1, squery)
+      backend.search_results(start, count, squery)
+    end
 
     # The string url of the backend's web interface, if any.
     def self.url

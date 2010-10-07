@@ -145,6 +145,14 @@ module Resque
         show :failed
       end
     end
+    
+    post "/search" do
+      show :search
+    end
+    
+    get "/search" do
+      show :search
+    end
 
     post "/failed/clear" do
       Resque::Failure.clear

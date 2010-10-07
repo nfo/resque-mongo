@@ -33,6 +33,20 @@ context "on GET to /failed" do
   should_respond_with_success
 end
 
+# Search failed jobs
+context "on POST to /search" do
+  setup {post "/search"}
+  
+  should_respond_with_success
+end
+
+# When typing /search directly in the browser
+context "on GET to /search" do
+  setup {get "/search"}
+  
+  should_respond_with_success
+end
+
 # Stats 
 context "on GET to /stats/resque" do
   setup { get "/stats/resque" }
