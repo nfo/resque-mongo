@@ -39,7 +39,6 @@ module Resque
             failure.each_key do |key|
               match = false
               squery.split.each do |term|
-                p term
                 if failure[key].to_s =~ /#{term}/i
                   match = true
                   break
