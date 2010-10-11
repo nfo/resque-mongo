@@ -29,37 +29,41 @@ module Resque
       end
       
       # Looks for failed jobs who match a particular search string
-      def self.search_results(start = 0, count = 1, squery)
+      def self.search_results(query, start = 0, count = 1)
         start, count = [start, count].map { |n| Integer(n) }
-        res = Set.new
+        set_results = Set.new
         
         # If the search query is nil or empty, return an empty array
-        if squery.nil? || squery.empty?
-          return []
-        end
+        return [] if query.nil? || query.empty?
         
         # For each search term, retrieve the failed jobs that contain at least one relevant field matching the regexp defined by that search term
-        squery.split.each do |sterm|
-          _sres = Resque.mongo_failures.find({"$or" => [ {"exception" => /#{sterm}/i}, {"error" => /#{sterm}/i}, {"payload.class" => /#{sterm}/i}, \
-            {"payload.args" => /#{sterm}/i}, {"worker" => /#{sterm}/i}, {"queue" => /#{sterm}/i} ] }, {:fields => {"backtrace" =>0, "failed_at" => 0}}).sort([:natural, :desc]).to_a
+        query.split.each do |term|
+          partial_results = Resque.mongo_failures.find(
+            {"$or" => [ 
+              {"exception" => /#{term}/i},
+              {"error" => /#{term}/i},
+              {"payload.class" => /#{term}/i},
+              {"payload.args" => /#{term}/i},
+              {"worker" => /#{term}/i},
+              {"queue" => /#{term}/i} 
+            ] },
+            {:fields => {"backtrace" =>0, "failed_at" => 0}}
+          ).sort([:natural, :desc]).to_a
             
             # If the set was empty, merge the first results, else intersect it with the current results
-            if res.empty?
-              res.merge(_sres)
+            if set_results.empty?
+              set_results.merge(partial_results)
             else
-              res = res & _sres
+              set_results = set_results & partial_results
             end
         end
         
         # search_res will be an array containing 'count' values, starting with 'start', sorted in descending order
-        search_res = res.to_a[start, count]
+        search_results = set_results.to_a[start, count]
         
         # If start was greater than the size of res, [] returned nil, so this check if needed
-        if search_res.nil?
-          search_res = []
-        end
-        
-        search_res.size == 1 ? search_res.first : search_res
+        search_results ||= []
+        search_results
       end
 
       def self.clear
