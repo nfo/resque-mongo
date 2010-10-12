@@ -26,7 +26,7 @@ module Resque
     
     # Returns an array of all worker objects.
     def self.all
-      mongo_workers.distinct(:worker).map { |w| queues = w.split(','); worker = new(*queues); worker.to_s = w; worker }
+      mongo_workers.distinct(:worker).map { |w| queues = w.split(','); worker = new(*queues); worker.to_s = w; worker }.compact
     end
 
     # Returns an array of all worker objects currently processing
@@ -114,21 +114,20 @@ module Resque
       job_count = 0
       startup
       loop do
-        log "start work() loop."
-        break if @shutdown
+        break if shutdown?
 
-        if not @paused and j = reserve
-          log "got: #{j.inspect}"
-          run_hook :before_fork
-          working_on j
+        if not @paused and job = reserve
+          log "got: #{job.inspect}"
+          run_hook :before_fork, job
+          working_on job
 
           if @child = fork
             rand # Reseeding
             procline "Forked #{@child} at #{Time.now.to_s}"
             Process.wait
           else
-            procline "Processing #{j.queue} since #{Time.now.to_s} (#{job_count} so far)"
-            perform(j, &block)
+            procline "Processing #{job.queue} since #{Time.now.to_s} (#{job_count} so far)"
+            perform(job, &block)
             job_count += 1
             exit! unless @cant_fork
           end
@@ -270,6 +269,11 @@ module Resque
     def shutdown!
       shutdown
       kill_child
+    end
+
+    # Should this worker shutdown as soon as current job is finished?
+    def shutdown?
+      @shutdown
     end
 
     # Kills the forked child immediately, without remorse. The job it

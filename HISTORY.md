@@ -1,3 +1,20 @@
+## 1.11.0 (2010-08-23)
+
+* Web UI: Group /workers page by hostnames
+
+## 1.10.0 (2010-08-23)
+
+* Support redis:// string format in `Resque.redis=`
+* Using new cross-platform JSON gem.
+* Added `after_enqueue` plugin hook.
+* Added `shutdown?` method which can be overridden.
+* Added support for the "leftright" gem when running tests.
+* Grammarfix: In the README
+
+## 1.9.10 (2010-08-06)
+
+* Bugfix: before_fork should get passed the job
+
 ## 1.9.9 (2010-07-26)
 
 * Depend on redis-namespace 0.8.0
