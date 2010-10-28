@@ -46,8 +46,7 @@ module Resque
               {"payload.args" => /#{term}/i},
               {"worker" => /#{term}/i},
               {"queue" => /#{term}/i} 
-            ] },
-            {:fields => {"backtrace" =>0, "failed_at" => 0}}
+            ] }
           ).sort([:natural, :desc]).to_a
             
           # If the set was empty, merge the first results, else intersect it with the current results
