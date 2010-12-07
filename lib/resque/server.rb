@@ -199,6 +199,7 @@ module Resque
       info = Resque.info
 
       stats = []
+      stats << "resque.servers=#{info[:servers].inspect}"
       stats << "resque.pending=#{info[:pending]}"
       stats << "resque.processed+=#{info[:processed]}"
       stats << "resque.failed+=#{info[:failed]}"

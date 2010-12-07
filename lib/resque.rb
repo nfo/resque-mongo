@@ -137,7 +137,7 @@ module Resque
   end
 
   def to_s
-    "Resque Client connected to #{@con.host}:#{@con.port}"
+    "Resque Client connected to #{@con.nodes.inspect}"
   end
 
   def add_indexes
@@ -339,7 +339,7 @@ module Resque
       :workers   => workers.size.to_i,
       :working   => working.size,
       :failed    => Stat[:failed],
-      :servers   => ["#{@con.host}:#{@con.port}"],
+      :servers   => @con.nodes, # [[host1, 27017], [host2, 27017]] or [[host1, 27017]]
       :environment  => ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development',
     }
   end
