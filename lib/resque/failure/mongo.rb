@@ -45,7 +45,8 @@ module Resque
               {"payload.class" => /#{term}/i},
               {"payload.args" => /#{term}/i},
               {"worker" => /#{term}/i},
-              {"queue" => /#{term}/i} 
+              {"queue" => /#{term}/i},
+              {"backtrace" => /#{term}/i}
             ] }
           ).sort([:natural, :desc]).to_a
             
