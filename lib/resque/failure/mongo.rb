@@ -24,7 +24,7 @@ module Resque
 
       def self.all(start = 0, count = 1)
         start, count = [start, count].map { |n| Integer(n) }
-        all_failures = Resque.mongo_failures.find().sort([:natural, :desc]).skip(start).limit(count).to_a
+        all_failures = Resque.mongo_failures.find().sort([:failed_at, :desc]).skip(start).limit(count).to_a
         all_failures.size == 1 ? all_failures.first : all_failures
       end
       
@@ -48,7 +48,7 @@ module Resque
               {"queue" => /#{term}/i},
               {"backtrace" => /#{term}/i}
             ] }
-          ).sort([:natural, :desc]).to_a
+          ).sort([:failed_at, :desc]).to_a
             
           # If the set was empty, merge the first results, else intersect it with the current results
           if set_results.empty?
