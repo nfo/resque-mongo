@@ -5,7 +5,7 @@
 
 <h1>Failed Jobs</h1>
 <%unless failed.empty?%>
-<form method="POST" action="<%=u 'failed/clear'%>" class='clear-failed'>
+<form method="POST" action="<%=u 'failed/clear'%>" class="clear-failed" style="display: none">
   <input type='submit' name='' value='Clear Failed Jobs' />
 </form>
 <form method="POST" action="<%=u 'search'%>">

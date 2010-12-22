@@ -6,7 +6,7 @@
 <h1>Search Results for "<%= params[:squery]%>"</h1>
 
 <%unless failed.empty?%>
-<form method="POST" action="<%=u 'failed/clear'%>" class='clear-failed'>
+<form method="POST" action="<%=u 'failed/clear'%>" class='clear-failed' style="display: none">
   <input type='submit' name='' value='Clear Failed Jobs' />
 </form>
 <%end%>
