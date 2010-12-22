@@ -137,7 +137,7 @@ module Resque
   end
 
   def to_s
-    "Resque Client connected to #{@con.nodes.inspect}"
+    "Resque Client connected to #{@con.primary[0]}:#{@con.primary[1]}/#{@db.name}/#{@mongo.name}"
   end
 
   def add_indexes
@@ -291,8 +291,8 @@ module Resque
   # Given a class, try to extrapolate an appropriate queue based on a
   # class instance variable or `queue` method.
   def queue_from_class(klass)
-    klass.instance_variable_get(:@queue) ||
-      (klass.respond_to?(:queue) and klass.queue)
+    (klass.instance_variable_get(:@queue) ||
+      (klass.respond_to?(:queue) and klass.queue)).to_s
   end
 
   # This method will return a `Resque::Job` object or a non-true value
@@ -339,7 +339,7 @@ module Resque
       :workers   => workers.size.to_i,
       :working   => working.size,
       :failed    => Stat[:failed],
-      :servers   => @con.nodes, # [[host1, 27017], [host2, 27017]] or [[host1, 27017]]
+      :servers   => "#{@con.primary[0]}:#{@con.primary[1]}/#{@db.name}/#{@mongo.name}",
       :environment  => ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development',
     }
   end
