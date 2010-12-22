@@ -39,6 +39,21 @@ end
 
 Resque.mongo = 'localhost:27017'
 
+module Resque
+  # Drop all collections in the 'monque' database.
+  # Note: do not drop the database directly, as mongod allocates disk space
+  # each time it's re-created.
+  def flushall
+    for name in @db.collection_names
+      begin
+        @db.drop_collection(name)
+      rescue Mongo::OperationFailure
+        # "can't drop system ns"
+      end
+    end
+  end
+end
+
 ##
 # test/spec/mini 3
 # http://gist.github.com/25455

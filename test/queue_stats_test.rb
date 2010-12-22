@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__)) + '/test_helper'
 
 context "Queue Statistics" do  
   setup do
-    Resque.drop
+    Resque.flushall
   end
   
   test "Creating a queue named 'test' and check it exists in the queues list" do

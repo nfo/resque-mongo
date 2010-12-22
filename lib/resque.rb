@@ -149,19 +149,6 @@ module Resque
     @failures.create_index :queue
   end
 
-  def drop
-    @mongo.drop
-    @workers.drop
-    @failures.drop
-    @stats.drop
-    @queues.drop
-    @mongo = nil
-    @workers = nil
-    @failures = nil
-    @stats = nil
-    @queues = nil
-  end
-  
   #
   # queue manipulation
   #

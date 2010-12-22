@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__)) + '/test_helper'
 
 context "Resque" do
   setup do
-    Resque.drop
+    Resque.flushall
 
     Resque.push(:people, { 'name' => 'chris' })
     Resque.push(:people, { 'name' => 'bob' })
@@ -179,7 +179,7 @@ context "Resque" do
   end
 
   test "queues are always a list" do
-    Resque.drop
+    Resque.flushall
     assert_equal [], Resque.queues
   end
 
