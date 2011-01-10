@@ -27,8 +27,14 @@ module Resque
   attr_accessor :verbose
   attr_accessor :very_verbose
   
-  # Accepts a 'hostname:port' string or a Mongo::Connection object.
+  # Accepts  'hostname' or 'hostname:port' or 'hostname:port/db' strings
+  # or a Mongo::DB object.
   def mongo=(server)
+    match = server.match(/([^:]+):?(\d*)\/?(\w*)/) # http://rubular.com/r/G6O8qe0DJ5
+    host = match[1]
+    port = match[2].nil? || match[2] == '' ? '27017' : match[2]
+    db = match[3].nil? || match[3] == '' ? 'monque' : match[3]
+    
     @verbose = ENV['LOGGING']||ENV['VERBOSE']
     @very_verbose = ENV['VVERBOSE']
     
@@ -41,12 +47,13 @@ module Resque
       host, port = server.split(':')
       log "Initializing connection to #{host}:#{port}"
       @con = Mongo::Connection.new(host, port)
-    when Mongo::Connection
-      @con = server
+      @db = @con.db(db)
+    when Mongo::DB
+      @con = server.connection
+      @db = server
     else
       
     end
-    @db = @con.db('monque')
     @mongo = @db.collection('monque')
     @workers = @db.collection('workers')
     @failures = @db.collection('failures')
@@ -278,8 +285,8 @@ module Resque
   # Given a class, try to extrapolate an appropriate queue based on a
   # class instance variable or `queue` method.
   def queue_from_class(klass)
-    (klass.instance_variable_get(:@queue) ||
-      (klass.respond_to?(:queue) and klass.queue)).to_s
+    klass.instance_variable_get(:@queue) ||
+      (klass.respond_to?(:queue) and klass.queue)
   end
 
   # This method will return a `Resque::Job` object or a non-true value

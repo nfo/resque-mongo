@@ -229,7 +229,7 @@ context "Resque" do
     assert_equal 3, stats[:queues]
     assert_equal 3, stats[:processed]
     assert_equal 1, stats[:failed]
-    assert_equal [["localhost", 27017]], stats[:servers]
+    assert_equal "localhost:27017/monque/monque", stats[:servers]
   end
 
   test "decode bad json" do
