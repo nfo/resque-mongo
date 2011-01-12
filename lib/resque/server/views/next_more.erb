@@ -2,18 +2,18 @@
 <%if  start - count >= 0 || start + count <= size%>
 <p class='pagination'>
   <% if start - count >= 0 %>
-		<% if params[:q].nil? %>
-			<a href="<%= current_page %>?start=<%= start - count %>" class='less'>&laquo; less</a>
-		<% else %>
-			<a href="<%= current_page %>?start=<%= start - count %>&amp;q=<%= params[:q] %>" class='less'>&laquo; less</a>
-		<% end %>
+    <% if params[:q].nil? %>
+      <a href="<%= current_page %>?start=<%= start - count %>" class='less'>&laquo; less</a>
+    <% else %>
+      <a href="<%= current_page %>?start=<%= start - count %>&amp;q=<%= params[:q] %>" class='less'>&laquo; less</a>
+    <% end %>
   <% end %>
   <% if start + count <= size %>
-		<% if params[:q].nil? %>
-			<a href="<%= current_page %>?start=<%= start + count %>" class='more'>more &raquo;</a>
-		<% else %>
-		    <a href="<%= current_page %>?start=<%= start + count %>&amp;q=<%= params[:q] %>" class='more'>more &raquo;</a>
-		<% end %>
+    <% if params[:q].nil? %>
+      <a href="<%= current_page %>?start=<%= start + count %>" class='more'>more &raquo;</a>
+    <% else %>
+      <a href="<%= current_page %>?start=<%= start + count %>&amp;q=<%= params[:q] %>" class='more'>more &raquo;</a>
+    <% end %>
   <% end %>
 </p>
 <%end%>
