@@ -21,6 +21,10 @@ module Resque
       def self.count
         Resque.mongo_failures.count
       end
+      
+      def self.search_count
+        @@search_results.count
+      end
 
       def self.all(start = 0, count = 1)
         start, count = [start, count].map { |n| Integer(n) }
@@ -31,7 +35,10 @@ module Resque
       # Looks for failed jobs who match a particular search string
       def self.search_results(query, start = 0, count = 1)
         # If the search query is nil or empty, return an empty array
-        return [] if query.nil? || query.empty?
+        if query.nil? || query.empty?
+          @@search_results = []
+          return []
+        end
         
         start, count = [start, count].map { |n| Integer(n) }
         set_results = Set.new
@@ -59,6 +66,7 @@ module Resque
         end
         
         # search_res will be an array containing 'count' values, starting with 'start', sorted in descending order
+        @@search_results = set_results.to_a || []
         search_results = set_results.to_a[start, count]
         
         search_results || []

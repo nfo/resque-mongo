@@ -40,6 +40,11 @@ module Resque
     def self.count
       backend.count
     end
+    
+    # Returns the int count of the number of results for the last search executed
+    def self.search_count
+      backend.search_count
+    end
 
     # Returns an array of all the failures, paginated.
     #

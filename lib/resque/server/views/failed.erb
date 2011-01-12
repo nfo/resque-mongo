@@ -1,20 +1,28 @@
 <%start = params[:start].to_i %>
 <%count = params[:count] ? params[:count].to_i : 50 %>
-<%failed = [Resque::Failure.all(start, count)].flatten %>
+
+<%if params[:q].nil?%>
+<% failed = [Resque::Failure.all(start, count)].flatten %>
+<% size = Resque::Failure.count %>
+<h1>Failed Jobs</h1>
+<%else%>
+<% failed = [Resque::Failure.search_results(params[:q], start, count)].flatten %>
+<% size = Resque::Failure.search_count %>
+<h1>Search Results</h1>
+<%end%>
 <% index = 0 %>
 
-<h1>Failed Jobs</h1>
 <%unless failed.empty?%>
 <form method="POST" action="<%=u 'failed/clear'%>" class="clear-failed" style="display: none">
   <input type='submit' name='' value='Clear Failed Jobs' />
 </form>
-<form method="POST" action="<%=u 'search'%>">
-  <input type='text' name='squery'>
+<form method="GET" action="<%=u 'search'%>">
+  <input type='text' name='q'>
   <input type='submit' name='' value='Search' />
 </form>
 <%end%>
 
-<p class='sub'>Showing <%=start%> to <%= start + count %> of <b><%= size = Resque::Failure.count %></b> jobs</p>
+<p class='sub'>Showing <%=start%> to <%= start + failed.size %> of <b><%= size %></b> jobs</p>
 
 <ul class='failed'>
   <%for job in failed%>
@@ -54,4 +62,4 @@
   <%end%>
 </ul>
 
-<%= partial :next_more, :start => start, :count => count, :size => size %>
+<%= partial :next_more, :start => start, :count => count, :size => size, :params => params %>

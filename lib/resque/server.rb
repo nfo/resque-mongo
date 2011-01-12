@@ -161,12 +161,8 @@ module Resque
       end
     end
     
-    post "/search" do
-      show :search
-    end
-    
     get "/search" do
-      show :search
+      show :failed
     end
 
     post "/failed/clear" do
