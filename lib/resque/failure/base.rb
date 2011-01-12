@@ -36,8 +36,18 @@ module Resque
         0
       end
 
+      # The number of failures after a search.
+      def self.search_count
+        0
+      end
+
       # Returns a paginated array of failure objects.
       def self.all(start = 0, count = 1)
+        []
+      end
+
+      # Returns a paginated array of failure objects after a search.
+      def self.search_results(query, start = 0, count = 1)
         []
       end
 

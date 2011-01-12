@@ -27,9 +27,19 @@ module Resque
         classes.first.count
       end
 
+      # Number of result of a failures search.
+      def self.search_count
+        classes.first.search_count if classes.first.respond_to?(:search_count)
+      end
+
       # Returns a paginated array of failure objects.
       def self.all(start = 0, count = 1)
         classes.first.all(start,count)
+      end
+
+      # The results of a failures search.
+      def self.search_results(query, start = 0, count = 1)
+        classes.first.search_results(query, start, count) if classes.first.respond_to?(:search_results)
       end
 
       # A URL where someone can go to view failures.
