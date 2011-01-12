@@ -161,10 +161,6 @@ module Resque
       end
     end
     
-    get "/search" do
-      show :failed
-    end
-
     post "/failed/clear" do
       Resque::Failure.clear
       redirect u('failed')

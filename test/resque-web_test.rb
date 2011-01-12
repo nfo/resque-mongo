@@ -34,15 +34,8 @@ context "on GET to /failed" do
 end
 
 # Search failed jobs
-context "on POST to /search" do
-  setup {post "/search"}
-  
-  should_respond_with_success
-end
-
-# When typing /search directly in the browser
-context "on GET to /search" do
-  setup {get "/search"}
+context "on GET to /failed with a search query" do
+  setup {get "/failed?q=toto"}
   
   should_respond_with_success
 end
