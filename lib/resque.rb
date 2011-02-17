@@ -30,21 +30,18 @@ module Resque
   # Accepts  'hostname' or 'hostname:port' or 'hostname:port/db' strings
   # or a Mongo::DB object.
   def mongo=(server)
-    match = server.match(/([^:]+):?(\d*)\/?(\w*)/) # http://rubular.com/r/G6O8qe0DJ5
-    host = match[1]
-    port = match[2].nil? || match[2] == '' ? '27017' : match[2]
-    db = match[3].nil? || match[3] == '' ? 'monque' : match[3]
-    
     @verbose = ENV['LOGGING']||ENV['VERBOSE']
     @very_verbose = ENV['VVERBOSE']
-    
-    raise "I don't know what to do with #{server.inspect}" unless server.is_a?(String) || server.is_a?(Mongo::Connection)
     
     @con.close if @con
     
     case server
     when String
-      host, port = server.split(':')
+      match = server.match(/([^:]+):?(\d*)\/?(\w*)/) # http://rubular.com/r/G6O8qe0DJ5
+      host = match[1]
+      port = match[2].nil? || match[2] == '' ? '27017' : match[2]
+      db = match[3].nil? || match[3] == '' ? 'monque' : match[3]
+      
       log "Initializing connection to #{host}:#{port}"
       @con = Mongo::Connection.new(host, port)
       @db = @con.db(db)
@@ -52,8 +49,9 @@ module Resque
       @con = server.connection
       @db = server
     else
-      
+      raise "I don't know what to do with #{server.inspect}" unless server.is_a?(String) || server.is_a?(Mongo::Connection)
     end
+    
     @mongo = @db.collection('monque')
     @workers = @db.collection('workers')
     @failures = @db.collection('failures')
