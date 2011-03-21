@@ -1,6 +1,8 @@
 module Resque
   # Methods used by various classes in Resque.
   module Helpers
+    class DecodeException < StandardError; end
+
     # Direct access to the Redis instance.
     def mongo
       Resque.mongo
@@ -35,12 +37,14 @@ module Resque
       if defined? Yajl
         begin
           Yajl::Parser.parse(object, :check_utf8 => false)
-        rescue Yajl::ParseError
+        rescue Yajl::ParseError => e
+          raise DecodeException, e
         end
       else
         begin
           JSON.parse(object)
-        rescue JSON::ParserError
+        rescue JSON::ParserError => e
+          raise DecodeException, e
         end
       end
     end

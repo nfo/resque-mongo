@@ -79,7 +79,7 @@ module Resque
     # in alphabetical order. Queues can be dynamically added or
     # removed without needing to restart workers using this method.
     def initialize(*queues)
-      @queues = queues
+      @queues = queues.map { |queue| queue.to_s.strip }
       validate_queues
     end
 
@@ -103,13 +103,14 @@ module Resque
     # 2. Work loop: Jobs are pulled from a queue and processed.
     # 3. Teardown:  This worker is unregistered.
     #
-    # Can be passed an integer representing the polling frequency.
+    # Can be passed a float representing the polling frequency.
     # The default is 5 seconds, but for a semi-active site you may
     # want to use a smaller value.
     #
     # Also accepts a block which will be passed the job as soon as it
     # has completed processing. Useful for testing.
-    def work(interval = 5, &block)
+    def work(interval = 5.0, &block)
+      interval = Float(interval)
       $0 = "resque: Starting"
       job_count = 0
       startup
@@ -135,10 +136,10 @@ module Resque
           done_working
           @child = nil
         else
-          break if interval.to_i == 0
-          log! "Sleeping for #{interval.to_i}"
+          break if interval.zero?
+          log! "Sleeping for #{interval} seconds"
           procline @paused ? "Paused" : "Waiting for #{@queues.join(',')}"
-          sleep interval.to_i
+          sleep interval
         end
       end
 
@@ -157,18 +158,22 @@ module Resque
     end
 
     # Processes a given job in the child.
-    def perform(j)
+    def perform(job)
       begin
-        run_hook :after_fork, j
-        j.perform
+        run_hook :after_fork, job
+        job.perform
       rescue Object => e
-        log "#{j.inspect} failed: #{e.inspect}"
-        j.fail(e)
+        log "#{job.inspect} failed: #{e.inspect}"
+        begin
+          job.fail(e)
+        rescue Object => e
+          log "Received exception when reporting failure: #{e.inspect}"
+        end
         failed!
       else
-        log "done: #{j.inspect}"
+        log "done: #{job.inspect}"
       ensure
-        yield j if block_given?
+        yield job if block_given?
       end
     end
 
@@ -184,6 +189,10 @@ module Resque
       end
 
       nil
+    rescue Exception => e
+      log "Error reserving job: #{e.inspect}"
+      log e.backtrace.join("\n")
+      raise e
     end
 
     # Returns a list of queues to use when searching for a job.
@@ -476,10 +485,15 @@ module Resque
       @hostname ||= `hostname`.chomp
     end
 
+    # Returns Integer PID of running worker
+    def pid
+      @pid ||= to_s.split(":")[1].to_i
+    end
+
     # Returns an array of string pids of all the other workers on this
     # machine. Useful when pruning dead workers on startup.
     def worker_pids
-      `ps -A -o pid,command | grep [r]esque`.split("\n").map do |line|
+      `ps -A -o pid,command | grep [r]esque | grep -v "resque-web"`.split("\n").map do |line|
         line.split(' ')[0]
       end
     end
@@ -497,7 +511,7 @@ module Resque
       if verbose
         puts "*** #{message}"
       elsif very_verbose
-        time = Time.now.strftime('%I:%M:%S %Y-%m-%d')
+        time = Time.now.strftime('%H:%M:%S %Y-%m-%d')
         puts "** [#{time}] #$$: #{message}"
       end
     end

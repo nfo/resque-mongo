@@ -16,17 +16,17 @@ module Resque
       alias_method :h, :escape_html
 
       def current_section
-        url request.path_info.sub('/','').split('/')[0].downcase
+        url_path request.path_info.sub('/','').split('/')[0].downcase
       end
 
       def current_page
-        url request.path_info.sub('/','')
+        url_path request.path_info.sub('/','')
       end
 
-      def url(*path_parts)
+      def url_path(*path_parts)
         [ path_prefix, path_parts ].join("/").squeeze('/')
       end
-      alias_method :u, :url
+      alias_method :u, :url_path
 
       def path_prefix
         request.env['SCRIPT_NAME']
@@ -38,7 +38,7 @@ module Resque
 
       def tab(name)
         dname = name.to_s.downcase
-        path = url(dname)
+        path = url_path(dname)
         "<li #{class_if_current(path)}><a href='#{path}'>#{name}</a></li>"
       end
 
@@ -110,7 +110,7 @@ module Resque
         if @polling
           text = "Last Updated: #{Time.now.strftime("%H:%M:%S")}"
         else
-          text = "<a href='#{url(request.path_info)}.poll' rel='poll'>Live Poll</a>"
+          text = "<a href='#{u(request.path_info)}.poll' rel='poll'>Live Poll</a>"
         end
         "<p class='poll'>#{text}</p>"
       end
@@ -127,7 +127,7 @@ module Resque
 
     # to make things easier on ourselves
     get "/?" do
-      redirect url(:overview)
+      redirect url_path(:overview)
     end
 
     %w( overview queues working workers key ).each do |page|
@@ -147,7 +147,7 @@ module Resque
 
     %w( overview workers ).each do |page|
       get "/#{page}.poll" do
-        content_type "text/plain"
+        content_type "text/html"
         @polling = true
         show(page.to_sym, false).gsub(/\s{1,}/, ' ')
       end
@@ -175,8 +175,13 @@ module Resque
       end
     end
 
+    get "/failed/remove/:index" do
+      Resque::Failure.remove(params[:index])
+      redirect u('failed')
+    end
+
     get "/stats" do
-      redirect url("/stats/resque")
+      redirect url_path("/stats/resque")
     end
 
     get "/stats/:id" do
@@ -202,7 +207,7 @@ module Resque
         stats << "queues.#{queue}=#{Resque.size(queue)}"
       end
 
-      content_type 'text/plain'
+      content_type 'text/html'
       stats.join "\n"
     end
 

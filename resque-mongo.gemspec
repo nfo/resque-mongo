@@ -28,7 +28,7 @@ Gem::Specification.new do |s|
   s.add_dependency "json",      "~> 1.4.6"
 
   s.description = <<description
-    Resque is a Redis-backed Ruby library for creating background jobs,
+    Resque-mongo is a MongoDB-backed Ruby library for creating background jobs,
     placing those jobs on multiple queues, and processing them later.
 
     Background jobs can be any Ruby class or module that responds to

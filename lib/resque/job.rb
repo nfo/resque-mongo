@@ -43,19 +43,13 @@ module Resque
     #
     # Raises an exception if no queue or class is given.
     def self.create(queue, klass, *args)
-      if !queue
-        raise NoQueueError.new("Jobs must be placed onto a queue.")
-      end
+      Resque.validate(klass, queue)
 
-      if klass.to_s.empty?
-        raise NoClassError.new("Jobs must be given a class.")
+      if Resque.inline?
+        constantize(klass).perform(*decode(encode(args)))
+      else
+        Resque.push(queue, :class => klass.to_s, :args => args)
       end
-
-      ret = Resque.push(queue, :class => klass.to_s, :args => args)
-      Plugin.after_enqueue_hooks(klass).each do |hook|
-        klass.send(hook, *args)
-      end
-      ret
     end
 
     def self.from_hash(hash)
