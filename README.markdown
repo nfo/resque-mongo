@@ -13,9 +13,9 @@ Also, check your mongo version: 1.3.0 or higher
 
 [fnr]: http://www.mongodb.org/display/DOCS/findandmodify+Command
 
-    gem install resque-mongo
+    gem install nfo-resque-mongo
     # Rails integration, config/environment.rb
-    config.gem 'resque-mongo', :lib => 'resque'
+    config.gem 'nfo-resque-mongo', :lib => 'resque'
 
 
 Resque
