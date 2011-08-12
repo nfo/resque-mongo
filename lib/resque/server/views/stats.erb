@@ -2,7 +2,12 @@
 
 <% if params[:key] %>
 
+  <h1>Not supported in resque-mongo yet</h1>
+<% if false %><!-- No supported in resque-mongo -->
+
 <%= partial resque.redis.type(params[:key]).eql?("string") ? :key_string : :key_sets %>
+
+<% end %>
 
 <% elsif params[:id] == "resque" %>
 
@@ -22,6 +27,9 @@
 
 <% elsif params[:id] == 'redis' %>
 
+  <h1>Not supported in resque-mongo yet</h1>
+<% if false %><!-- No supported in resque-mongo -->
+
   <h1><%= resque.redis_id %></h1>
   <table class='stats'>
   <% for key, value in resque.redis.info.to_a.sort_by { |i| i[0].to_s } %>
@@ -36,10 +44,14 @@
   <% end %>
   </table>
 
+<% end %>
+
 <% elsif params[:id] == 'keys' %>
 
+  <h1>Not supported in resque-mongo yet</h1>
+<% if false %><!-- No supported in resque-mongo -->
+
   <h1>Keys owned by <%= resque %></h1>
-  <p class='sub'>(All keys are actually prefixed with "<%= Resque.redis.namespace %>:")</p>
   <table class='stats'>
     <tr>
       <th>key</th>
@@ -56,6 +68,8 @@
     </tr>
   <% end %>
   </table>
+
+<% end %>
 
 <% else %>
 
