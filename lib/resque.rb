@@ -1,11 +1,5 @@
 require 'mongo'
 
-begin
-  require 'yajl'
-rescue LoadError
-  require 'json'
-end
-
 require 'resque/version'
 
 require 'resque/errors'
@@ -173,6 +167,19 @@ module Resque
 
   # Pushes a job onto a queue. Queue name should be a string and the
   # item should be any JSON-able Ruby object.
+  #
+  # Resque works generally expect the `item` to be a hash with the following
+  # keys:
+  #
+  #   class - The String name of the job to run.
+  #    args - An Array of arguments to pass the job. Usually passed
+  #           via `class.to_class.perform(*args)`.
+  #
+  # Example
+  #
+  #   Resque.push('archive', :class => 'Archive', :args => [ 35, 'tar' ])
+  #
+  # Returns nothing
   def push(queue, item)
     watch_queue(queue)
     mongo << { :queue => queue.to_s, :item => item , :date => Time.now }
@@ -259,6 +266,12 @@ module Resque
   #
   # This method is considered part of the `stable` API.
   def enqueue(klass, *args)
+    # Perform before_enqueue hooks. Don't perform enqueue if any hook returns false
+    before_hooks = Plugin.before_enqueue_hooks(klass).collect do |hook|
+      klass.send(hook, *args)
+    end
+    return if before_hooks.any? { |result| result == false }
+
     Job.create(queue_from_class(klass), klass, *args)
 
     Plugin.after_enqueue_hooks(klass).each do |hook|
@@ -388,3 +401,4 @@ module Resque
   end
 
 end
+

@@ -13,7 +13,7 @@ context "Resque" do
     #STDERR.puts Resque.queues.inspect
     assert Resque.queues.include? 'people'
   end
-  
+
   test "can put jobs on a queue" do
     assert Resque::Job.create(:jobs, 'SomeJob', 20, '/tmp')
     assert Resque::Job.create(:jobs, 'SomeJob', 20, '/tmp')

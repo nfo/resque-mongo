@@ -117,14 +117,14 @@ module Resque
       loop do
         break if shutdown?
 
-        if not @paused and job = reserve
+        if not paused? and job = reserve
           log "got: #{job.inspect}"
           run_hook :before_fork, job
           working_on job
 
           if @child = fork
-            rand # Reseeding
-            procline "Forked #{@child} at #{Time.now.to_s}"
+            srand # Reseeding
+            procline "Forked #{@child} at #{Time.now.to_i}"
             Process.wait
           else
             procline "Processing #{job.queue} since #{Time.now.to_s} (#{job_count} so far)"
@@ -138,7 +138,7 @@ module Resque
         else
           break if interval.zero?
           log! "Sleeping for #{interval} seconds"
-          procline @paused ? "Paused" : "Waiting for #{@queues.join(',')}"
+          procline paused? ? "Paused" : "Waiting for #{@queues.join(',')}"
           sleep interval
         end
       end
@@ -299,6 +299,11 @@ module Resque
       end
     end
 
+    # are we paused?
+    def paused?
+      @paused
+    end
+    
     # Stop processing jobs after the current one has completed (if we're
     # currently running one).
     def pause_processing

@@ -11,7 +11,7 @@ module Resque
           :payload   => payload,
           :exception => exception.class.to_s,
           :error     => exception.to_s,
-          :backtrace => Array(exception.backtrace),
+          :backtrace => filter_backtrace(Array(exception.backtrace)),
           :worker    => worker.to_s,
           :queue     => queue
         }
@@ -86,6 +86,11 @@ module Resque
       def self.remove(index)
         item = all(index)
         Resque.mongo_failures.remove(:_id => item['_id'])
+      end
+      
+      def filter_backtrace(backtrace)
+        index = backtrace.index { |item| item.include?('/lib/resque/job.rb') }
+        backtrace.first(index.to_i)
       end
     end
   end

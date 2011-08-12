@@ -2,6 +2,7 @@ require 'sinatra/base'
 require 'erb'
 require 'resque'
 require 'resque/version'
+require 'time'
 
 module Resque
   class Server < Sinatra::Base
@@ -118,6 +119,7 @@ module Resque
     end
 
     def show(page, layout = true)
+      response["Cache-Control"] = "max-age=0, private, must-revalidate"
       begin
         erb page.to_sym, {:layout => layout}, :resque => Resque
       rescue Errno::ECONNREFUSED
@@ -125,9 +127,25 @@ module Resque
       end
     end
 
+    def show_for_polling(page)
+      content_type "text/html"
+      @polling = true
+      show(page.to_sym, false).gsub(/\s{1,}/, ' ')
+    end
+
     # to make things easier on ourselves
     get "/?" do
       redirect url_path(:overview)
+    end
+
+    %w( overview workers ).each do |page|
+      get "/#{page}.poll" do
+        show_for_polling(page)
+      end
+
+      get "/#{page}/:id.poll" do
+        show_for_polling(page)
+      end
     end
 
     %w( overview queues working workers key ).each do |page|
@@ -143,14 +161,6 @@ module Resque
     post "/queues/:id/remove" do
       Resque.remove_queue(params[:id])
       redirect u('queues')
-    end
-
-    %w( overview workers ).each do |page|
-      get "/#{page}.poll" do
-        content_type "text/html"
-        @polling = true
-        show(page.to_sym, false).gsub(/\s{1,}/, ' ')
-      end
     end
 
     get "/failed" do
