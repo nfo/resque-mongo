@@ -193,6 +193,7 @@ module Resque
     doc = mongo.find_and_modify( :query => { :queue => queue.to_s },
                                  :sort => [[:date, 1]],
                                  :remove => true )
+    return if doc.nil?
     QueueStats.remove_job(queue)
     doc['item']
   rescue Mongo::OperationFailure => e
