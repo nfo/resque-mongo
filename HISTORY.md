@@ -1,3 +1,7 @@
+## 1.17.2 (2011-10-27)
+
+* [resque-mongo] Fix for the gem mongo 2.x.
+
 ## 1.17.1 (2011-05-27)
 
 * Reverted `exit` change. Back to `exit!`.
